@@ -33,7 +33,7 @@ function! s:AppendTagsForFile(file_to_update)
   call s:RunShellCmd(append_cmd)
 endfunction
 
-function! UpdateTagsForFile()
+function! s:UpdateTagsForFile()
   let file_to_update = s:RelativeFilePathAndName()
   call s:ClearStaleTags(file_to_update)
   call s:AppendTagsForFile(file_to_update)
@@ -45,12 +45,13 @@ function! s:RelativeFilePathAndName()
   return substitute(current_file_with_path, '^'.cwd, '.', '')
 endfunction
 
-" function! s:HookAutoCmds()
-	" autocmd BufWritePost,FileWritePost * call s:UpdateTagsForFile()
-" endfunction
+function! s:HookAutoCmds()
+  autocmd BufWritePost,FileWritePost * call s:UpdateTagsForFile()
+endfunction
 
 function! s:DefineCommands()
   command! MagicInitTagsFile call s:InitTagsFile()
 endfunction
 
 call s:DefineCommands()
+call s:HookAutoCmds()
