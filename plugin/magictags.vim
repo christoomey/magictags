@@ -1,6 +1,20 @@
 function! s:InitTagsFile()
-  let init_cmd = "ctags -f tags -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript ./"
+  let init_cmd = s:CtagsCmd('./')
   call s:RunShellCmd(init_cmd)
+endfunction
+
+function! s:CtagsCmd(file_or_path, ...)
+  let is_appending = a:0 > 0
+  if is_appending
+    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a"
+  else
+    let ctags_base_cmd = "ctags " . s:CtagsOptions()
+  end
+  return join([ctags_base_cmd, a:file_or_path])
+endfunction
+
+function! s:CtagsOptions()
+  return "-f tags -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
 endfunction
 
 function! s:RunShellCmd(cmd)
@@ -13,9 +27,16 @@ function! s:ClearStaleTags(file_to_update)
   call s:RunShellCmd(clear_cmd)
 endfunction
 
+function! s:AppendTagsForFile(file_to_update)
+  let append = 1
+  let append_cmd = s:CtagsCmd(a:file_to_update, append)
+  call s:RunShellCmd(append_cmd)
+endfunction
+
 function! UpdateTagsForFile()
   let file_to_update = s:RelativeFilePathAndName()
   call s:ClearStaleTags(file_to_update)
+  call s:AppendTagsForFile(file_to_update)
 endfunction
 
 function! s:RelativeFilePathAndName()
