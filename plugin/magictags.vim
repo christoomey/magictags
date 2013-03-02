@@ -6,9 +6,8 @@ function! s:InitTagsFile()
   call s:RunShellCmd(init_cmd)
 endfunction
 
-function! s:CtagsCmd(file_or_path, ...)
-  let is_appending = a:0 > 0
-  if is_appending
+function! s:CtagsCmd(is_appending)
+  if a:is_appending == 1
     let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a " . s:FileAndPathForGrep()
   else
     let ctags_base_cmd = "ctags " . s:CtagsOptions()
@@ -53,9 +52,9 @@ function! s:ClearStaleTags()
   call s:RunShellCmd(clear_cmd)
 endfunction
 
-function! s:AppendTagsForFile(file_to_update)
+function! s:AppendTagsForFile()
   let append = 1
-  let append_cmd = s:CtagsCmd(a:file_to_update, append)
+  let append_cmd = s:CtagsCmd(append)
   call s:RunShellCmd(append_cmd)
 endfunction
 
@@ -63,11 +62,8 @@ function! s:UpdateTagsForFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  " if no tags at root, init tags
-  " if tags file at root, append
-  let file_to_update = s:RelativeFilePathAndName()
   call s:ClearStaleTags()
-  call s:AppendTagsForFile(file_to_update)
+  call s:AppendTagsForFile()
 endfunction
 
 function! s:FileAndPathForGrep()
@@ -76,17 +72,6 @@ function! s:FileAndPathForGrep()
   let cwd=getcwd()
   let file_path_below_git_root =  substitute(cwd, absolute_git_root, '', '')
   return (file_path_below_git_root . '/' . expand("%"))[1:]
-endfunction
-
-function! s:RelativeFilePathAndName()
-  let cwd=getcwd()
-  let current_file_with_path = expand("%:p")
-  let relative_path = substitute(current_file_with_path, '^'.cwd, '', '')[1:]
-  return s:git_repo_cdup_path . relative_path
-endfunction
-
-function! s:PathToFileFromGitRoot()
-  let file_with_path = expand("%")
 endfunction
 
 function! s:HookAutoCmds()
