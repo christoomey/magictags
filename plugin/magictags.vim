@@ -9,7 +9,7 @@ endfunction
 function! s:CtagsCmd(file_or_path, ...)
   let is_appending = a:0 > 0
   if is_appending
-    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a " . expand("%")
+    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a " . s:FileAndPathForGrep()
   else
     let ctags_base_cmd = "ctags " . s:CtagsOptions()
   end
@@ -21,16 +21,17 @@ function! s:CtagsOptions()
 endfunction
 
 function! s:TagsFilePath()
-  return s:git_repo_cdup_path . 'tags'
+  return 'tags'
 endfunction
 
 function! s:TempTagsFilePath()
-  return s:git_repo_cdup_path . '.tags.temp'
+  return 'tags.temp'
 endfunction
 
 function! s:RunShellCmd(cmd)
-  echom a:cmd
-  return system(a:cmd)
+  let cmd_in_context = 'cd ' . s:git_repo_cdup_path . ' && ' . a:cmd
+  echom cmd_in_context
+  return system(cmd_in_context)
 endfunction
 
 function! s:GitRepoPathToRoot()
@@ -45,7 +46,7 @@ function! s:GitRepoPathToRoot()
 endfunction
 
 function! s:ClearStaleTags()
-  let filename_regex = shellescape('\t'.s:FileAndPathForGrep().'\t')
+  let filename_regex = shellescape('	'.s:FileAndPathForGrep().'	')
   let tags_file= s:TagsFilePath()
   let tags_temp = s:TempTagsFilePath()
   let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp.' && mv '.tags_temp.' '.tags_file
