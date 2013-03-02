@@ -2,7 +2,7 @@ function! s:InitTagsFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  let init_cmd = s:CtagsCmd('./')
+  let init_cmd = s:CtagsCmd(s:git_repo_cdup_path)
   call s:RunShellCmd(init_cmd)
 endfunction
 
@@ -17,15 +17,24 @@ function! s:CtagsCmd(file_or_path, ...)
 endfunction
 
 function! s:CtagsOptions()
-  return "-f tags -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
+  return "-f ".s:TagsFilePath()." -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
+endfunction
+
+function! s:TagsFilePath()
+  return s:git_repo_cdup_path . 'tags'
+endfunction
+
+function! s:TempTagsFilePath()
+  return s:git_repo_cdup_path . '.tags.temp'
 endfunction
 
 function! s:RunShellCmd(cmd)
+  echom a:cmd
   return system(a:cmd)
 endfunction
 
 function! s:GitRepoPathToRoot()
-  let git_top = s:RunShellCmd('git rev-parse --show-cdup')
+  let git_top = system('git rev-parse --show-cdup')
   let git_fail = 'fatal:'
   if strpart(git_top, 0, strlen(git_fail)) == git_fail
     return s:NOT_IN_GIT_REPO
@@ -37,7 +46,9 @@ endfunction
 
 function! s:ClearStaleTags(file_to_update)
   let filename_regex = shellescape('\t'.a:file_to_update.'\t')
-  let clear_cmd = 'grep -v '.filename_regex.' tags > .tags.temp && mv .tags.temp tags'
+  let tags_file= s:TagsFilePath()
+  let tags_temp = s:TempTagsFilePath()
+  let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp.' && mv '.tags_temp.' '.tags_file
   call s:RunShellCmd(clear_cmd)
 endfunction
 
@@ -51,6 +62,8 @@ function! s:UpdateTagsForFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
+  " if no tags at root, init tags
+  " if tags file at root, append
   let file_to_update = s:RelativeFilePathAndName()
   call s:ClearStaleTags(file_to_update)
   call s:AppendTagsForFile(file_to_update)
@@ -59,7 +72,12 @@ endfunction
 function! s:RelativeFilePathAndName()
   let cwd=getcwd()
   let current_file_with_path = expand("%:p")
-  return substitute(current_file_with_path, '^'.cwd, '.', '')
+  let relative_path = substitute(current_file_with_path, '^'.cwd, '', '')[1:]
+  return s:git_repo_cdup_path . relative_path
+endfunction
+
+function! s:PathToFileFromGitRoot()
+  let file_with_path = expand("%")
 endfunction
 
 function! s:HookAutoCmds()
