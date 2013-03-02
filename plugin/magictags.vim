@@ -9,11 +9,11 @@ endfunction
 function! s:CtagsCmd(file_or_path, ...)
   let is_appending = a:0 > 0
   if is_appending
-    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a"
+    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a " . expand("%")
   else
     let ctags_base_cmd = "ctags " . s:CtagsOptions()
   end
-  return join([ctags_base_cmd, a:file_or_path])
+  return ctags_base_cmd
 endfunction
 
 function! s:CtagsOptions()
@@ -44,8 +44,8 @@ function! s:GitRepoPathToRoot()
   endif
 endfunction
 
-function! s:ClearStaleTags(file_to_update)
-  let filename_regex = shellescape('\t'.a:file_to_update.'\t')
+function! s:ClearStaleTags()
+  let filename_regex = shellescape('\t'.s:FileAndPathForGrep().'\t')
   let tags_file= s:TagsFilePath()
   let tags_temp = s:TempTagsFilePath()
   let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp.' && mv '.tags_temp.' '.tags_file
@@ -65,8 +65,16 @@ function! s:UpdateTagsForFile()
   " if no tags at root, init tags
   " if tags file at root, append
   let file_to_update = s:RelativeFilePathAndName()
-  call s:ClearStaleTags(file_to_update)
+  call s:ClearStaleTags()
   call s:AppendTagsForFile(file_to_update)
+endfunction
+
+function! s:FileAndPathForGrep()
+  call s:GitRepoPathToRoot()
+  let absolute_git_root = fnamemodify(s:git_repo_cdup_path, ':p')[:-2]
+  let cwd=getcwd()
+  let file_path_below_git_root =  substitute(cwd, absolute_git_root, '', '')
+  return (file_path_below_git_root . '/' . expand("%"))[1:]
 endfunction
 
 function! s:RelativeFilePathAndName()
