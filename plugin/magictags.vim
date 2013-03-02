@@ -63,7 +63,7 @@ function! s:RelativeFilePathAndName()
 endfunction
 
 function! s:HookAutoCmds()
-  autocmd BufWritePost,FileWritePost * call s:UpdateTagsForFile()
+  autocmd BufWritePost,FileWritePost *.rb call s:UpdateTagsForFile()
 endfunction
 
 function! s:DefineCommands()
