@@ -2,30 +2,39 @@ function! s:InitTagsFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  let init_cmd = s:CtagsCmd('./')
+  let init_cmd = s:CtagsCmd(s:git_repo_cdup_path)
   call s:RunShellCmd(init_cmd)
 endfunction
 
-function! s:CtagsCmd(file_or_path, ...)
-  let is_appending = a:0 > 0
-  if is_appending
-    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a"
+function! s:CtagsCmd(is_appending)
+  if a:is_appending == 1
+    let ctags_base_cmd = "ctags " . s:CtagsOptions() . " -a " . s:FileAndPathForGrep()
   else
     let ctags_base_cmd = "ctags " . s:CtagsOptions()
   end
-  return join([ctags_base_cmd, a:file_or_path])
+  return ctags_base_cmd
 endfunction
 
 function! s:CtagsOptions()
-  return "-f tags -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
+  return "-f ".s:TagsFilePath()." -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
+endfunction
+
+function! s:TagsFilePath()
+  return 'tags'
+endfunction
+
+function! s:TempTagsFilePath()
+  return 'tags.temp'
 endfunction
 
 function! s:RunShellCmd(cmd)
-  return system(a:cmd)
+  let cmd_in_context = 'cd ' . s:git_repo_cdup_path . ' && ' . a:cmd
+  echom cmd_in_context
+  return system(cmd_in_context)
 endfunction
 
 function! s:GitRepoPathToRoot()
-  let git_top = s:RunShellCmd('git rev-parse --show-cdup')
+  let git_top = system('git rev-parse --show-cdup')
   let git_fail = 'fatal:'
   if strpart(git_top, 0, strlen(git_fail)) == git_fail
     return s:NOT_IN_GIT_REPO
@@ -35,15 +44,17 @@ function! s:GitRepoPathToRoot()
   endif
 endfunction
 
-function! s:ClearStaleTags(file_to_update)
-  let filename_regex = shellescape('\t'.a:file_to_update.'\t')
-  let clear_cmd = 'grep -v '.filename_regex.' tags > .tags.temp && mv .tags.temp tags'
+function! s:ClearStaleTags()
+  let filename_regex = shellescape('	'.s:FileAndPathForGrep().'	')
+  let tags_file= s:TagsFilePath()
+  let tags_temp = s:TempTagsFilePath()
+  let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp.' && mv '.tags_temp.' '.tags_file
   call s:RunShellCmd(clear_cmd)
 endfunction
 
-function! s:AppendTagsForFile(file_to_update)
+function! s:AppendTagsForFile()
   let append = 1
-  let append_cmd = s:CtagsCmd(a:file_to_update, append)
+  let append_cmd = s:CtagsCmd(append)
   call s:RunShellCmd(append_cmd)
 endfunction
 
@@ -51,15 +62,16 @@ function! s:UpdateTagsForFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  let file_to_update = s:RelativeFilePathAndName()
-  call s:ClearStaleTags(file_to_update)
-  call s:AppendTagsForFile(file_to_update)
+  call s:ClearStaleTags()
+  call s:AppendTagsForFile()
 endfunction
 
-function! s:RelativeFilePathAndName()
+function! s:FileAndPathForGrep()
+  call s:GitRepoPathToRoot()
+  let absolute_git_root = fnamemodify(s:git_repo_cdup_path, ':p')[:-2]
   let cwd=getcwd()
-  let current_file_with_path = expand("%:p")
-  return substitute(current_file_with_path, '^'.cwd, '.', '')
+  let file_path_below_git_root =  substitute(cwd, absolute_git_root, '', '')
+  return (file_path_below_git_root . '/' . expand("%"))[1:]
 endfunction
 
 function! s:HookAutoCmds()
