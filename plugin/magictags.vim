@@ -27,9 +27,19 @@ function! s:TempTagsFilePath()
   return 'tags.temp'
 endfunction
 
+function! s:TagsFileExists()
+  return filereadable(s:git_repo_cdup_path . s:TagsFilePath())
+endfunction
+
+function! s:Debug(statement)
+  if g:magictags_debug
+    echom a:statement
+  endif
+endfunction
+
 function! s:RunShellCmd(cmd)
   let cmd_in_context = 'cd ' . s:git_repo_cdup_path . ' && ' . a:cmd
-  echom cmd_in_context
+  call s:Debug(cmd_in_context)
   return system(cmd_in_context)
 endfunction
 
@@ -62,8 +72,14 @@ function! s:UpdateTagsForFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  call s:ClearStaleTags()
-  call s:AppendTagsForFile()
+  if s:TagsFileExists()
+    call s:Debug('Updating tags file')
+    call s:ClearStaleTags()
+    call s:AppendTagsForFile()
+  else
+    call s:Debug('No tags file found. Initing new tags file')
+    call s:InitTagsFile()
+  endif
 endfunction
 
 function! s:FileAndPathForGrep()
@@ -84,5 +100,6 @@ endfunction
 
 let s:NOT_IN_GIT_REPO = 'not_in_git_repo'
 let s:IN_GIT_REPO = 'in_git_repo'
+let g:magictags_debug = 0
 call s:DefineCommands()
 call s:HookAutoCmds()
