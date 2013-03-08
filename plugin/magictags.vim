@@ -102,4 +102,10 @@ let s:NOT_IN_GIT_REPO = 'not_in_git_repo'
 let s:IN_GIT_REPO = 'in_git_repo'
 let g:magictags_debug = 0
 call s:DefineCommands()
+
+if exists("g:loaded_magictags_hooks") && g:loaded_magictags_hooks
+  finish
+endif
+
+let g:loaded_magictags_hooks = 1
 call s:HookAutoCmds()
