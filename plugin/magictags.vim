@@ -2,8 +2,9 @@ function! s:InitTagsFile()
   if s:GitRepoPathToRoot() == s:NOT_IN_GIT_REPO
     return
   endif
-  let init_cmd = s:CtagsCmd(s:git_repo_cdup_path)
+  let init_cmd = s:CtagsCmd(0)
   call s:RunShellCmd(init_cmd)
+  call s:CommitTempFile()
 endfunction
 
 function! s:CtagsCmd(is_appending)
@@ -16,7 +17,7 @@ function! s:CtagsCmd(is_appending)
 endfunction
 
 function! s:CtagsOptions()
-  return "-f ".s:TagsFilePath()." -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
+  return "-f ".s:TempTagsFilePath()." -R --exclude='*.js' --langmap='ruby:+.rake.builder.rjs' --languages=-javascript"
 endfunction
 
 function! s:TagsFilePath()
@@ -58,7 +59,7 @@ function! s:ClearStaleTags()
   let filename_regex = shellescape('	'.s:FileAndPathForGrep().'	')
   let tags_file= s:TagsFilePath()
   let tags_temp = s:TempTagsFilePath()
-  let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp.' && mv '.tags_temp.' '.tags_file
+  let clear_cmd = 'grep -v '.filename_regex.' '.tags_file.' > '.tags_temp
   call s:RunShellCmd(clear_cmd)
 endfunction
 
@@ -66,6 +67,14 @@ function! s:AppendTagsForFile()
   let append = 1
   let append_cmd = s:CtagsCmd(append)
   call s:RunShellCmd(append_cmd)
+  call s:CommitTempFile()
+endfunction
+
+function! s:CommitTempFile()
+  let tags_file= s:TagsFilePath()
+  let tags_temp = s:TempTagsFilePath()
+  let commit_changes_to_tmp_cmd = 'mv '.tags_temp.' '.tags_file
+  call s:RunShellCmd(commit_changes_to_tmp_cmd)
 endfunction
 
 function! s:UpdateTagsForFile()
