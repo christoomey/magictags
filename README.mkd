@@ -32,10 +32,10 @@ of the rest.
 
 For **Pathogen**, run the following commands in your shell:
 
-``` shell
+``` bash
 cd ~/.vim
-mkdir -p bundles
-cd bundles
+mkdir -p bundle # creates bundle directory if it doesn't exist
+cd bundle
 git clone https://github.com/christoomey/vim-tmux-runner.git
 ```
 
