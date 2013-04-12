@@ -100,11 +100,11 @@ function! s:FileAndPathForGrep()
 endfunction
 
 function! s:HookAutoCmds()
-  autocmd BufWritePost,FileWritePost *.rb call s:UpdateTagsForFile()
+  autocmd BufWritePost,FileWritePost * call s:UpdateTagsForFile()
 endfunction
 
 function! s:DefineCommands()
-  command! MagicInitTagsFile call s:InitTagsFile()
+  command! MagictagsInitTagsFile call s:InitTagsFile()
 endfunction
 
 let s:NOT_IN_GIT_REPO = 'not_in_git_repo'
